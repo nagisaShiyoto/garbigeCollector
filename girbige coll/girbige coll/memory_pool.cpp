@@ -13,22 +13,52 @@ memory_pool::~memory_pool()
 	delete this->memory;
 }
 
-int memory_pool::malloc(const size_t& size)
+ptr memory_pool::malloc(const size_t& size)
 {
-	int offset = 0;
+	ptr pointer;
 	auto smallest = this->free_place.begin();
 	//find the smallest place he can fit in
 	for (auto it = this->free_place.begin(); it != this->free_place.end(); it++)
 	{
-		if (smallest->second<it->second && it->second>size)
+		if (smallest->second > it->second && it->second>size)
 		{
 			smallest = it;
 		}
 	}
-	offset = smallest->first;
+	pointer.offset = smallest->first;
+	pointer.size = size;
 	//put it in place
 	smallest->first += size;
 	smallest->second -= size;
+	if (smallest->second == 0)
+	{
+		this->free_place.erase(smallest);
+	}
+	return pointer;
+}
 
-	return offset;
+void memory_pool::free(ptr pointer)
+{
+	//go over until it find the place it supposed to be bofore it
+	auto it = this->free_place.begin();
+	auto before = this->free_place.end();
+	for (it = this->free_place.begin(); it != this->free_place.end() && it->first < pointer.offset; ++it)
+	{
+		before = it;
+	}
+	//check if there isnt any memory between so it wont create unneccery place in vector
+	if (it->first - pointer.size == pointer.offset)
+	{
+		it->first = pointer.offset;
+		it->second += pointer.size;
+	}
+	//check if the last place dont have memory in between them
+	else if (before!=this->free_place.end()&&before->first + before->second == pointer.offset)
+	{
+		before->second += pointer.size;
+	}
+	else
+	{
+		this->free_place.insert(it,std::pair<int,size_t>(pointer.offset,pointer.size));
+	}
 }
