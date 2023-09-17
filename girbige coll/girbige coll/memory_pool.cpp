@@ -16,14 +16,20 @@ memory_pool::~memory_pool()
 ptr memory_pool::malloc(const size_t& size)
 {
 	ptr pointer;
+	bool found = false;
 	auto smallest = this->free_place.begin();
 	//find the smallest place he can fit in
 	for (auto it = this->free_place.begin(); it != this->free_place.end(); it++)
 	{
 		if (smallest->second > it->second && it->second>size)
 		{
+			found = true;
 			smallest = it;
 		}
+	}
+	if (found)
+	{
+		throw std::out_of_range("not enough space");
 	}
 	pointer.offset = smallest->first;
 	pointer.size = size;
