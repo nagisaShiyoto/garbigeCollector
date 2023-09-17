@@ -2,18 +2,23 @@
 #include <iostream>
 #include <vector>
 #include <utility>
+#include <map>
 struct ptr
 {
 	int offset;
 	size_t size;
+
+
 }; 
 class memory_pool
 {
 public:
 	memory_pool();
 	~memory_pool();
-	ptr malloc(const size_t& size);
+	ptr alloc(const size_t& size);
 	void free(ptr pointer);
+	ptr& operator=(const ptr& rhs);
+
 private:
 	int const EMOUNT_OF_MEMORY= 4056;
 	//first int for the place second size_t for the amount of place
