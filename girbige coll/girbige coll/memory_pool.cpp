@@ -13,16 +13,15 @@ memory_pool::~memory_pool()
 	delete this->memory;
 }
 
-ptr memory_pool::alloc(const size_t& size)
+ptr* memory_pool::alloc(const size_t& size)
 {
-	size_t newSize = size + 1;//gigve place to the refcounter
-	ptr pointer;
+	ptr* pointer=new ptr;
 	bool found = false;
 	auto smallest = this->free_place.begin();
 	//find the smallest place he can fit in
 	for (auto it = this->free_place.begin(); it != this->free_place.end(); it++)
 	{
-		if (smallest->second > it->second && it->second>newSize)
+		if (smallest->second > it->second && it->second>size)
 		{
 			found = true;
 			smallest = it;
@@ -32,16 +31,18 @@ ptr memory_pool::alloc(const size_t& size)
 	{
 		throw std::out_of_range("not enough space");
 	}
-	pointer.offset = smallest->first;
-	pointer.size = newSize;
+	pointer->offset = smallest->first;
+	pointer->size = size;
 	//put it in place
-	smallest->first += newSize;
-	smallest->second -= newSize;
+	smallest->first += size;
+	smallest->second -= size;
 	if (smallest->second == 0)
 	{
 		this->free_place.erase(smallest);
 	}
-	this->memory[pointer.offset] = 1;//when create only one ref
+	//put it in the vector and make the refCount 1
+	pointer->refCount = 1;
+	this->pointers.push_back(pointer);
 	return pointer;
 }
 
@@ -69,10 +70,28 @@ void memory_pool::free(ptr pointer)
 	{
 		this->free_place.insert(it,std::pair<int,size_t>(pointer.offset,pointer.size));
 	}
+	for (auto it = this->pointers.begin(); it != this->pointers.end(); it++)
+	{
+		if ((**it) == pointer)
+		{
+			delete* it;
+			this->pointers.erase(it);
+			break;
+		}
+	}
 }
 
-ptr& memory_pool::operator=(const ptr& rhs)
+ptr* ptr::assigne(ptr* rhs)
 {
-	ptr hi;
-	return hi;
+	rhs->refCount++;
+	this->refCount--;
+	return rhs;
+}
+bool ptr::operator==(const ptr& rhs)
+{
+	if (this->offset == rhs.offset && this->size == rhs.size && this->refCount == rhs.refCount)
+	{
+		return true;
+	}
+	return false;
 }
